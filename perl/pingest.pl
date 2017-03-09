@@ -251,11 +251,26 @@ sub reingest {
         push(@running, $pid);
     } elsif ($pid == 0) {
         my $dbh = DBI->connect('DBI:Pg:');
+        reingest_full_rec($dbh, $list) unless ($skip_attrs);
         reingest_attributes($dbh, $list) unless ($skip_attrs);
         reingest_field_entries($dbh, $list)
             unless ($skip_facets && $skip_search);
         $dbh->disconnect();
         exit(0);
+    }
+}
+
+sub reingest_full_rec {
+    my $dbh = shift;
+    my $list = shift;
+    my $sth = $dbh->prepare("SELECT metabib.reingest_metabib_full_rec(?)");
+    foreach (@$list) {
+        $sth->bind_param(1, $_);
+        if ($sth->execute()) {
+            my $crap = $sth->fetchall_arrayref();
+        } else {
+            warn ("metabib.reingest_metabib_full_rec failed for record $_");
+        }
     }
 }
 
